@@ -26,23 +26,24 @@ const payload: OpenAIStreamPayload = {
   top_p: 1,
   frequency_penalty: 0,
   presence_penalty: 0,
-  max_tokens: 200,
+  max_tokens: 600,
   stream: true,
   n: 1,
 };
 
-export const openAiStream = async (response: Response) => {
+export const openAiStream = async (response: Response, prompt = 'tell me a joke') => {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("Missing env var from OpenAI");
   }
 
+  const promtToCall = { ...payload, prompt }
   const res = await axios("https://api.openai.com/v1/completions", {
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${process.env.OPENAI_API_KEY ?? ""}`,
     },
     method: "POST",
-    data: JSON.stringify(payload),
+    data: JSON.stringify(promtToCall),
     responseType: 'stream',
   });
   const encoder = new TextEncoder();
@@ -70,7 +71,7 @@ export const openAiStream = async (response: Response) => {
               // this is a prefix character (i.e., "\n\n"), do nothing
               return;
             }
-            response.write(`data: ${JSON.stringify(text)}\n\n`);
+            response.write(text);
             const queue = encoder.encode(text);
             controller.enqueue(queue);
             counter++;
